@@ -71,11 +71,16 @@ const kindTitles = {
 };
 const kindNouns = { income: "доход", expense: "расход", assets: "актив" };
 
-function openForm(kind, index = null) {
+function normalizeKind(kind) {
+  return kind === "asset" ? "assets" : kind;
+}
+
+function openForm(kindRaw, index = null) {
+  const kind = normalizeKind(kindRaw);
   formFields.kind.value = kind;
   formFields.index.value = index === null ? "" : index;
   document.getElementById("modal-title").textContent =
-    index === null ? kindTitles[kind] : "Изменить " + kindNouns[kind];
+    index === null ? kindTitles[kind] : "Изменить " + (kindNouns[kind] || kind);
 
   const isAsset = kind === "assets";
   document.getElementById("f-category-wrap").style.display = isAsset ? "none" : "block";
@@ -114,7 +119,7 @@ document.addEventListener("keydown", (e) => {
 
 form.addEventListener("submit", (e) => {
   e.preventDefault();
-  const kind = formFields.kind.value;
+  const kind = normalizeKind(formFields.kind.value);
   const indexRaw = formFields.index.value;
   const index = indexRaw === "" ? null : Number(indexRaw);
   const isAsset = kind === "assets";
@@ -160,7 +165,8 @@ form.addEventListener("submit", (e) => {
 });
 
 /* ---------- Удаление ---------- */
-function deleteRecord(kind, id) {
+function deleteRecord(kindRaw, id) {
+  const kind = normalizeKind(kindRaw);
   if (!confirm("Удалить эту запись?")) return;
   state[kind] = state[kind].filter((r) => r.id !== id);
   save();
