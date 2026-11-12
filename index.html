@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Финансовый кабинет</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="brand-logo">₽</span>
+      <span class="brand-name">Финансовый кабинет</span>
+    </div>
+    <nav class="nav">
+      <button class="nav-btn active" data-view="dashboard">Обзор</button>
+      <button class="nav-btn" data-view="income">Доходы</button>
+      <button class="nav-btn" data-view="expenses">Расходы</button>
+      <button class="nav-btn" data-view="assets">Активы</button>
+    </nav>
+    <button id="exportBtn" class="btn btn-ghost" title="Скачать резервную копию (JSON)">Экспорт</button>
+  </header>
+
+  <main class="container">
+    <!-- ================= ОБЗОР ================= -->
+    <section id="view-dashboard" class="view active">
+      <div class="cards">
+        <div class="card stat">
+          <span class="stat-label">Баланс</span>
+          <span class="stat-value" id="stat-balance">—</span>
+        </div>
+        <div class="card stat">
+          <span class="stat-label">Доходы (месяц)</span>
+          <span class="stat-value positive" id="stat-income">—</span>
+        </div>
+        <div class="card stat">
+          <span class="stat-label">Расходы (месяц)</span>
+          <span class="stat-value negative" id="stat-expenses">—</span>
+        </div>
+        <div class="card stat">
+          <span class="stat-label">Стоимость активов</span>
+          <span class="stat-value" id="stat-assets">—</span>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Движение средств по месяцам</h2>
+          <canvas id="chart-monthly"></canvas>
+        </div>
+        <div class="card">
+          <h2>Структура расходов</h2>
+          <canvas id="chart-categories"></canvas>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card">
+          <h2>Состав активов</h2>
+          <canvas id="chart-assets"></canvas>
+        </div>
+        <div class="card">
+          <h2>Последние операции</h2>
+          <div id="recent-list" class="list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= ДОХОДЫ ================= -->
+    <section id="view-income" class="view">
+      <div class="section-head">
+        <h1>Доходы</h1>
+        <button class="btn btn-primary" data-open-form="income">+ Добавить доход</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Дата</th><th>Категория</th><th>Описание</th><th class="num">Сумма</th><th></th></tr>
+          </thead>
+          <tbody id="income-tbody"></tbody>
+        </table>
+        <p id="income-empty" class="empty">Пока нет записей о доходах.</p>
+      </div>
+    </section>
+
+    <!-- ================= РАСХОДЫ ================= -->
+    <section id="view-expenses" class="view">
+      <div class="section-head">
+        <h1>Расходы</h1>
+        <button class="btn btn-primary" data-open-form="expense">+ Добавить расход</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Дата</th><th>Категория</th><th>Описание</th><th class="num">Сумма</th><th></th></tr>
+          </thead>
+          <tbody id="expense-tbody"></tbody>
+        </table>
+        <p id="expense-empty" class="empty">Пока нет записей о расходах.</p>
+      </div>
+    </section>
+
+    <!-- ================= АКТИВЫ ================= -->
+    <section id="view-assets" class="view">
+      <div class="section-head">
+        <h1>Активы</h1>
+        <button class="btn btn-primary" data-open-form="asset">+ Добавить актив</button>
+      </div>
+      <div class="card">
+        <table>
+          <thead>
+            <tr><th>Название</th><th>Тип</th><th>Дата приобретения</th><th class="num">Стоимость</th><th></th></tr>
+          </thead>
+          <tbody id="asset-tbody"></tbody>
+        </table>
+        <p id="asset-empty" class="empty">Пока нет активов.</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- ================= МОДАЛЬНОЕ ОКНО ================= -->
+  <div id="modal" class="modal hidden">
+    <div class="modal-box">
+      <h2 id="modal-title">Новая запись</h2>
+      <form id="entry-form">
+        <input type="hidden" id="f-kind" />
+        <input type="hidden" id="f-index" />
+
+        <label>Дата
+          <input type="date" id="f-date" required />
+        </label>
+
+        <label id="f-category-wrap">Категория
+          <input type="text" id="f-category" list="category-list" placeholder="Например: Зарплата" required />
+          <datalist id="category-list"></datalist>
+        </label>
+
+        <label id="f-type-wrap">Тип актива
+          <select id="f-type">
+            <option>Деньги</option>
+            <option>Недвижимость</option>
+            <option>Транспорт</option>
+            <option>Ценные бумаги</option>
+            <option>Другое</option>
+          </select>
+        </label>
+
+        <label>Название / описание
+          <input type="text" id="f-title" placeholder="Описание" />
+        </label>
+
+        <label>Сумма (₽)
+          <input type="number" id="f-amount" step="0.01" min="0" required />
+        </label>
+
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="modal-cancel">Отмена</button>
+          <button type="submit" class="btn btn-primary">Сохранить</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <footer class="footer">
+    Данные хранятся локально в вашем браузере. Не забывайте делать экспорт-резервную копию.
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
