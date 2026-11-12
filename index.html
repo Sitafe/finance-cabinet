@@ -21,6 +21,7 @@
       <button class="nav-btn" data-view="assets">Активы</button>
     </nav>
     <button id="exportBtn" class="btn btn-ghost" title="Скачать резервную копию (JSON)">Экспорт</button>
+    <button id="syncBtn" class="btn btn-ghost" title="Синхронизация между устройствами">⟳ Синхронизация</button>
   </header>
 
   <main class="container">
@@ -160,6 +161,38 @@
           <button type="submit" class="btn btn-primary">Сохранить</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ================= СИНХРОНИЗАЦИЯ ================= -->
+  <div id="sync-modal" class="modal hidden">
+    <div class="modal-box">
+      <h2>Синхронизация</h2>
+      <p class="sync-hint">
+        Данные связываются между устройствами по коду синхронизации.
+        Введите один и тот же код на всех устройствах — записи будут совпадать.
+        Код работает как пароль: не публикуйте его.
+      </p>
+
+      <div id="sync-connected">
+        <p class="sync-key-line">Код: <strong id="sync-key-display"></strong></p>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="sync-disconnect">Отключиться</button>
+          <button type="button" class="btn btn-primary" id="sync-now">Синхронизировать</button>
+        </div>
+      </div>
+
+      <div id="sync-setup">
+        <label>Код синхронизации
+          <input type="text" id="sync-key-input" placeholder="Например: XK29-Q7PL" />
+        </label>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-ghost" id="sync-generate">Создать новый код</button>
+          <button type="button" class="btn btn-primary" id="sync-connect">Подключить</button>
+        </div>
+      </div>
+
+      <p id="sync-status" class="sync-status"></p>
     </div>
   </div>
 

@@ -35,7 +35,9 @@ function load() {
 }
 
 function save() {
+  state.updatedAt = new Date().toISOString();
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  schedulePush();
 }
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
@@ -114,7 +116,9 @@ modal.addEventListener("click", (e) => {
   if (e.target === modal) closeForm();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape" && !modal.classList.contains("hidden")) closeForm();
+  if (e.key !== "Escape") return;
+  if (!modal.classList.contains("hidden")) closeForm();
+  if (!syncModal.classList.contains("hidden")) syncModal.classList.add("hidden");
 });
 
 form.addEventListener("submit", (e) => {
@@ -413,6 +417,158 @@ document.getElementById("exportBtn").addEventListener("click", () => {
   a.click();
   URL.revokeObjectURL(a.href);
 });
+
+/* ---------- Синхронизация (Supabase) ---------- */
+const SUPABASE_URL = "https://slorzxlnsyfnyamxgcch.supabase.co";
+const SUPABASE_KEY = "sb_publishable_uMutZU_Q1pIhva7HT7J9-g_gDaj_z8R";
+const SYNC_KEY_STORAGE = "finance-cabinet-sync-key";
+
+let pushTimer = null;
+
+const syncModal = document.getElementById("sync-modal");
+const syncStatus = document.getElementById("sync-status");
+
+function getSyncKey() {
+  return localStorage.getItem(SYNC_KEY_STORAGE) || "";
+}
+
+function apiHeaders() {
+  return {
+    apikey: SUPABASE_KEY,
+    Authorization: "Bearer " + SUPABASE_KEY,
+    "Content-Type": "application/json",
+  };
+}
+
+async function fetchRemote() {
+  const key = getSyncKey();
+  const url = `${SUPABASE_URL}/rest/v1/sync_data?sync_key=eq.${encodeURIComponent(key)}&select=payload,updated_at`;
+  const res = await fetch(url, { headers: apiHeaders() });
+  if (!res.ok) throw new Error("не удалось получить данные (" + res.status + ")");
+  const rows = await res.json();
+  return rows.length ? rows[0] : null;
+}
+
+async function pushRemote() {
+  const key = getSyncKey();
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/sync_data?on_conflict=sync_key`, {
+    method: "POST",
+    headers: { ...apiHeaders(), Prefer: "resolution=merge-duplicates,return=minimal" },
+    body: JSON.stringify({
+      sync_key: key,
+      payload: {
+        income: state.income,
+        expense: state.expense,
+        assets: state.assets,
+        updatedAt: state.updatedAt || new Date().toISOString(),
+      },
+      updated_at: new Date().toISOString(),
+    }),
+  });
+  if (!res.ok) throw new Error("не удалось отправить данные (" + res.status + ")");
+}
+
+function schedulePush() {
+  if (!getSyncKey()) return;
+  clearTimeout(pushTimer);
+  pushTimer = setTimeout(() => syncNow().catch(() => setSyncStatus("Нет связи — изменения сохранены локально", true)), 2000);
+}
+
+async function syncNow() {
+  const key = getSyncKey();
+  if (!key) return;
+  setSyncStatus("Синхронизация…");
+  const remote = await fetchRemote();
+  const remoteAt = remote && remote.payload && remote.payload.updatedAt ? remote.payload.updatedAt : "";
+  const localAt = state.updatedAt || "";
+
+  if (remoteAt > localAt) {
+    state.income = remote.payload.income || [];
+    state.expense = remote.payload.expense || [];
+    state.assets = remote.payload.assets || [];
+    state.updatedAt = remoteAt;
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    renderAll();
+    setSyncStatus("Данные получены с сервера", "ok");
+  } else {
+    await pushRemote();
+    setSyncStatus("Синхронизировано", "ok");
+  }
+}
+
+async function connectSync(key) {
+  const clean = key.trim().toUpperCase();
+  if (!/^[A-Z0-9-]{6,}$/.test(clean)) {
+    setSyncStatus("Код: 6+ символов, латиница, цифры, дефис", true);
+    return;
+  }
+  localStorage.setItem(SYNC_KEY_STORAGE, clean);
+  renderSyncModal();
+  try {
+    await syncNow();
+  } catch (e) {
+    setSyncStatus("Ошибка: " + e.message, true);
+  }
+}
+
+function disconnectSync() {
+  if (!confirm("Отключить синхронизацию? Данные останутся в этом браузере, но перестанут обновляться между устройствами.")) return;
+  localStorage.removeItem(SYNC_KEY_STORAGE);
+  clearTimeout(pushTimer);
+  renderSyncModal();
+  setSyncStatus("");
+}
+
+function generateSyncKey() {
+  const abc = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+  const part = (n) => Array.from(crypto.getRandomValues(new Uint8Array(n)), (b) => abc[b % abc.length]).join("");
+  return part(4) + "-" + part(4);
+}
+
+function setSyncStatus(text, kind) {
+  syncStatus.textContent = text;
+  syncStatus.className = "sync-status" + (kind ? " " + kind : "");
+}
+
+function renderSyncModal() {
+  const key = getSyncKey();
+  document.getElementById("sync-connected").style.display = key ? "block" : "none";
+  document.getElementById("sync-setup").style.display = key ? "none" : "block";
+  if (key) document.getElementById("sync-key-display").textContent = key;
+}
+
+document.getElementById("syncBtn").addEventListener("click", () => {
+  renderSyncModal();
+  setSyncStatus("");
+  syncModal.classList.remove("hidden");
+});
+
+syncModal.addEventListener("click", (e) => {
+  if (e.target === syncModal) syncModal.classList.add("hidden");
+});
+
+document.getElementById("sync-connect").addEventListener("click", () => {
+  connectSync(document.getElementById("sync-key-input").value);
+});
+
+document.getElementById("sync-key-input").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    connectSync(e.target.value);
+  }
+});
+
+document.getElementById("sync-generate").addEventListener("click", () => {
+  connectSync(generateSyncKey());
+});
+
+document.getElementById("sync-now").addEventListener("click", () => {
+  syncNow().catch((e) => setSyncStatus("Ошибка: " + e.message, true));
+});
+
+document.getElementById("sync-disconnect").addEventListener("click", disconnectSync);
+
+if (getSyncKey()) syncNow().catch(() => setSyncStatus("Нет связи — показаны локальные данные", true));
 
 /* ---------- Инициализация ---------- */
 function renderAll() {

@@ -195,6 +195,13 @@ input:focus, select:focus { outline: none; border-color: var(--accent); }
 
 .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
 
+.sync-hint { color: var(--text-dim); font-size: 13px; line-height: 1.5; margin-bottom: 16px; }
+.sync-key-line { margin-bottom: 14px; font-size: 15px; }
+.sync-key-line strong { user-select: all; }
+.sync-status { margin-top: 14px; font-size: 13px; color: var(--text-dim); min-height: 18px; }
+.sync-status.error { color: var(--negative); }
+.sync-status.ok { color: var(--positive); }
+
 .footer {
   text-align: center;
   color: var(--text-dim);
