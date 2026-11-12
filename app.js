@@ -200,26 +200,26 @@ function renderTable(kind, tbodyId, emptyId, columns) {
 
 function renderIncome() {
   renderTable("income", "income-tbody", "income-empty", (r) => `
-    <td>${fmtDate(r.date)}</td>
-    <td>${escapeHtml(r.category)}</td>
-    <td>${escapeHtml(r.title || "—")}</td>
-    <td class="num positive">+${fmtMoney(r.amount)}</td>`);
+    <td data-label="Дата">${fmtDate(r.date)}</td>
+    <td data-label="Категория">${escapeHtml(r.category)}</td>
+    <td data-label="Описание">${escapeHtml(r.title || "—")}</td>
+    <td class="num positive" data-label="Сумма">+${fmtMoney(r.amount)}</td>`);
 }
 
 function renderExpenses() {
   renderTable("expense", "expense-tbody", "expense-empty", (r) => `
-    <td>${fmtDate(r.date)}</td>
-    <td>${escapeHtml(r.category)}</td>
-    <td>${escapeHtml(r.title || "—")}</td>
-    <td class="num negative">−${fmtMoney(r.amount)}</td>`);
+    <td data-label="Дата">${fmtDate(r.date)}</td>
+    <td data-label="Категория">${escapeHtml(r.category)}</td>
+    <td data-label="Описание">${escapeHtml(r.title || "—")}</td>
+    <td class="num negative" data-label="Сумма">−${fmtMoney(r.amount)}</td>`);
 }
 
 function renderAssets() {
   renderTable("assets", "asset-tbody", "asset-empty", (r) => `
-    <td>${escapeHtml(r.title || "—")}</td>
-    <td>${escapeHtml(r.type)}</td>
-    <td>${fmtDate(r.date)}</td>
-    <td class="num">${fmtMoney(r.amount)}</td>`);
+    <td data-label="Название">${escapeHtml(r.title || "—")}</td>
+    <td data-label="Тип">${escapeHtml(r.type)}</td>
+    <td data-label="Дата">${fmtDate(r.date)}</td>
+    <td class="num" data-label="Стоимость">${fmtMoney(r.amount)}</td>`);
 }
 
 function escapeHtml(s) {
