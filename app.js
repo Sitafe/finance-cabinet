@@ -67,9 +67,9 @@ const formFields = {
 const kindTitles = {
   income: "Новый доход",
   expense: "Новый расход",
-  asset: "Новый актив",
+  assets: "Новый актив",
 };
-const kindNouns = { income: "доход", expense: "расход", asset: "актив" };
+const kindNouns = { income: "доход", expense: "расход", assets: "актив" };
 
 function openForm(kind, index = null) {
   formFields.kind.value = kind;
@@ -77,7 +77,7 @@ function openForm(kind, index = null) {
   document.getElementById("modal-title").textContent =
     index === null ? kindTitles[kind] : "Изменить " + kindNouns[kind];
 
-  const isAsset = kind === "asset";
+  const isAsset = kind === "assets";
   document.getElementById("f-category-wrap").style.display = isAsset ? "none" : "block";
   document.getElementById("f-type-wrap").style.display = isAsset ? "block" : "none";
   formFields.category.required = !isAsset;
@@ -117,7 +117,7 @@ form.addEventListener("submit", (e) => {
   const kind = formFields.kind.value;
   const indexRaw = formFields.index.value;
   const index = indexRaw === "" ? null : Number(indexRaw);
-  const isAsset = kind === "asset";
+  const isAsset = kind === "assets";
 
   if (!formFields.date.value) {
     alert("Укажите дату.");
