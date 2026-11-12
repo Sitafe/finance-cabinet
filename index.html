@@ -130,21 +130,33 @@
   <!-- ================= МОДАЛЬНОЕ ОКНО ================= -->
   <div id="modal" class="modal hidden">
     <div class="modal-box">
-      <h2 id="modal-title">Новая запись</h2>
+      <div class="modal-header">
+        <h2 id="modal-title">Новая запись</h2>
+        <button type="button" class="modal-close" id="modal-x" title="Закрыть">✕</button>
+      </div>
       <form id="entry-form" novalidate>
         <input type="hidden" id="f-kind" />
         <input type="hidden" id="f-index" />
+        <input type="hidden" id="f-category-value" />
 
-        <label>Дата
+        <div class="field">
+          <label class="field-label" for="f-date">Дата</label>
           <input type="date" id="f-date" />
-        </label>
+        </div>
 
-        <label id="f-category-wrap">Категория
-          <input type="text" id="f-category" list="category-list" placeholder="Например: Зарплата" />
-          <datalist id="category-list"></datalist>
-        </label>
+        <div class="field" id="f-category-wrap">
+          <span class="field-label">Категория</span>
+          <div class="dropdown" id="category-dropdown">
+            <button type="button" class="dropdown-btn placeholder" id="category-btn">
+              <span id="category-btn-text">Выберите категорию</span>
+              <span class="dropdown-caret">▾</span>
+            </button>
+            <div class="dropdown-menu hidden" id="category-menu"></div>
+          </div>
+        </div>
 
-        <label id="f-type-wrap">Тип актива
+        <div class="field" id="f-type-wrap">
+          <label class="field-label" for="f-type">Тип актива</label>
           <select id="f-type">
             <option>Деньги</option>
             <option>Недвижимость</option>
@@ -152,15 +164,17 @@
             <option>Ценные бумаги</option>
             <option>Другое</option>
           </select>
-        </label>
+        </div>
 
-        <label>Название / описание
+        <div class="field">
+          <label class="field-label" for="f-title">Название / описание <span class="optional">— необязательно</span></label>
           <input type="text" id="f-title" placeholder="Описание" />
-        </label>
+        </div>
 
-        <label>Сумма (₽)
-          <input type="number" id="f-amount" step="0.01" min="0" />
-        </label>
+        <div class="field">
+          <label class="field-label" for="f-amount">Сумма, ₽</label>
+          <input type="number" id="f-amount" step="0.01" min="0" inputmode="decimal" placeholder="0" />
+        </div>
 
         <div class="modal-actions">
           <button type="button" class="btn btn-ghost" id="modal-cancel">Отмена</button>

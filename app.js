@@ -2,10 +2,19 @@
 
 const STORAGE_KEY = "finance-cabinet-data-v1";
 
+const DEFAULT_CATEGORIES = {
+  income: ["Зарплата", "Аванс", "Премия", "Фриланс", "Подарок", "Прочее"],
+  expense: ["Продукты", "Жильё", "Транспорт", "Развлечения", "Здоровье", "Подарки", "Прочее"],
+};
+
 const state = {
   income: [],   // { id, date, category, title, amount }
   expense: [],  // { id, date, category, title, amount }
   assets: [],   // { id, date, type, title, amount }
+  categories: {
+    income: [...DEFAULT_CATEGORIES.income],
+    expense: [...DEFAULT_CATEGORIES.expense],
+  },
 };
 
 const fmt = new Intl.NumberFormat("ru-RU", {
@@ -29,6 +38,10 @@ function load() {
     state.income = data.income || [];
     state.expense = data.expense || [];
     state.assets = data.assets || [];
+    state.categories = {
+      income: (data.categories && data.categories.income) || [...DEFAULT_CATEGORIES.income],
+      expense: (data.categories && data.categories.expense) || [...DEFAULT_CATEGORIES.expense],
+    };
   } catch (e) {
     console.error("Не удалось загрузить данные", e);
   }
@@ -60,7 +73,7 @@ const formFields = {
   kind: document.getElementById("f-kind"),
   index: document.getElementById("f-index"),
   date: document.getElementById("f-date"),
-  category: document.getElementById("f-category"),
+  category: document.getElementById("f-category-value"),
   type: document.getElementById("f-type"),
   title: document.getElementById("f-title"),
   amount: document.getElementById("f-amount"),
@@ -87,19 +100,21 @@ function openForm(kindRaw, index = null) {
   const isAsset = kind === "assets";
   document.getElementById("f-category-wrap").style.display = isAsset ? "none" : "block";
   document.getElementById("f-type-wrap").style.display = isAsset ? "block" : "none";
-  formFields.category.required = !isAsset;
   if (isAsset) formFields.category.value = "";
   formFields.title.placeholder = isAsset ? "Например: Квартира, депозит" : "Описание";
 
   const record = index !== null ? state[kind][index] : null;
-  formFields.date.value = record ? record.date : new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  formFields.date.value = record ? record.date : `${now.getFullYear()}-${pad2(now.getMonth() + 1)}-${pad2(now.getDate())}`;
   formFields.category.value = record ? record.category || "" : "";
   formFields.type.value = record ? record.type || "Деньги" : "Деньги";
   formFields.title.value = record ? record.title || "" : "";
   formFields.amount.value = record ? record.amount : "";
+  updateCategoryBtn();
+  closeCategoryMenu();
 
   modal.classList.remove("hidden");
-  (isAsset ? formFields.title : formFields.category).focus();
+  formFields.title.focus();
 }
 
 function closeForm() {
@@ -112,11 +127,13 @@ document.querySelectorAll("[data-open-form]").forEach((btn) => {
 });
 
 document.getElementById("modal-cancel").addEventListener("click", closeForm);
+document.getElementById("modal-x").addEventListener("click", closeForm);
 modal.addEventListener("click", (e) => {
   if (e.target === modal) closeForm();
 });
 document.addEventListener("keydown", (e) => {
   if (e.key !== "Escape") return;
+  if (!categoryMenu.classList.contains("hidden")) { closeCategoryMenu(); return; }
   if (!modal.classList.contains("hidden")) closeForm();
   if (!syncModal.classList.contains("hidden")) syncModal.classList.add("hidden");
 });
@@ -134,8 +151,8 @@ form.addEventListener("submit", (e) => {
     return;
   }
   if (!isAsset && !formFields.category.value.trim()) {
-    alert("Укажите категорию.");
-    formFields.category.focus();
+    alert("Выберите категорию.");
+    openCategoryMenu();
     return;
   }
   if (!(Number(formFields.amount.value) > 0)) {
@@ -155,6 +172,7 @@ form.addEventListener("submit", (e) => {
     record.type = formFields.type.value;
   } else {
     record.category = formFields.category.value.trim() || "Прочее";
+    ensureCategory(kind, record.category);
   }
 
   if (index !== null) {
@@ -578,20 +596,105 @@ function renderAll() {
   renderDashboard();
 }
 
-function fillCategoryDatalist() {
-  const list = document.getElementById("category-list");
-  const cats = new Set([
-    ...state.income.map((r) => r.category),
-    ...state.expense.map((r) => r.category),
-  ].filter(Boolean));
-  list.innerHTML = [...cats].map((c) => `<option value="${escapeHtml(c)}">`).join("");
+/* ---------- Категории: выпадающий список ---------- */
+const categoryBtn = document.getElementById("category-btn");
+const categoryBtnText = document.getElementById("category-btn-text");
+const categoryMenu = document.getElementById("category-menu");
+
+function ensureCategory(kind, cat) {
+  const list = state.categories[kind] || (state.categories[kind] = []);
+  if (!list.includes(cat)) list.push(cat);
 }
 
-const origRenderAll = renderAll;
-renderAll = function () {
-  origRenderAll();
-  fillCategoryDatalist();
-};
+function updateCategoryBtn() {
+  const v = formFields.category.value;
+  categoryBtnText.textContent = v || "Выберите категорию";
+  categoryBtn.classList.toggle("placeholder", !v);
+}
+
+function renderCategoryMenu() {
+  const cats = state.categories[formFields.kind.value] || [];
+  categoryMenu.innerHTML = "";
+  cats.forEach((c) => {
+    const item = document.createElement("button");
+    item.type = "button";
+    item.className = "dropdown-item" + (c === formFields.category.value ? " selected" : "");
+    item.textContent = c;
+    item.addEventListener("click", () => {
+      formFields.category.value = c;
+      updateCategoryBtn();
+      closeCategoryMenu();
+    });
+    categoryMenu.appendChild(item);
+  });
+  const addBtn = document.createElement("button");
+  addBtn.type = "button";
+  addBtn.className = "dropdown-item add";
+  addBtn.textContent = "＋ Новая категория";
+  addBtn.addEventListener("click", showCategoryInput);
+  categoryMenu.appendChild(addBtn);
+}
+
+function openCategoryMenu() {
+  renderCategoryMenu();
+  categoryMenu.classList.remove("hidden");
+}
+
+function closeCategoryMenu() {
+  categoryMenu.classList.add("hidden");
+}
+
+function showCategoryInput() {
+  categoryMenu.innerHTML = "";
+  const wrap = document.createElement("div");
+  wrap.className = "dropdown-add";
+  const input = document.createElement("input");
+  input.type = "text";
+  input.placeholder = "Название категории";
+  const ok = document.createElement("button");
+  ok.type = "button";
+  ok.className = "btn btn-primary btn-small";
+  ok.textContent = "Добавить";
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn btn-ghost btn-small";
+  cancel.textContent = "Отмена";
+  cancel.addEventListener("click", renderCategoryMenu);
+  const commit = () => {
+    const v = input.value.trim();
+    if (!v) return;
+    ensureCategory(formFields.kind.value, v);
+    save();
+    formFields.category.value = v;
+    updateCategoryBtn();
+    closeCategoryMenu();
+  };
+  ok.addEventListener("click", commit);
+  input.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      commit();
+    }
+  });
+  wrap.appendChild(input);
+  const row = document.createElement("div");
+  row.className = "dropdown-add-actions";
+  row.appendChild(cancel);
+  row.appendChild(ok);
+  wrap.appendChild(row);
+  categoryMenu.appendChild(wrap);
+  input.focus();
+}
+
+categoryBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  if (categoryMenu.classList.contains("hidden")) openCategoryMenu();
+  else closeCategoryMenu();
+});
+
+document.addEventListener("click", (e) => {
+  if (!document.getElementById("category-dropdown").contains(e.target)) closeCategoryMenu();
+});
 
 load();
 renderAll();
