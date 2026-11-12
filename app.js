@@ -119,6 +119,22 @@ form.addEventListener("submit", (e) => {
   const index = indexRaw === "" ? null : Number(indexRaw);
   const isAsset = kind === "asset";
 
+  if (!formFields.date.value) {
+    alert("Укажите дату.");
+    formFields.date.focus();
+    return;
+  }
+  if (!isAsset && !formFields.category.value.trim()) {
+    alert("Укажите категорию.");
+    formFields.category.focus();
+    return;
+  }
+  if (!(Number(formFields.amount.value) > 0)) {
+    alert("Укажите сумму больше нуля.");
+    formFields.amount.focus();
+    return;
+  }
+
   const record = {
     id: index !== null ? state[kind][index].id : uid(),
     date: formFields.date.value,
