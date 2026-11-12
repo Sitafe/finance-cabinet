@@ -80,6 +80,8 @@ function openForm(kind, index = null) {
   const isAsset = kind === "asset";
   document.getElementById("f-category-wrap").style.display = isAsset ? "none" : "block";
   document.getElementById("f-type-wrap").style.display = isAsset ? "block" : "none";
+  formFields.category.required = !isAsset;
+  if (isAsset) formFields.category.value = "";
   formFields.title.placeholder = isAsset ? "Например: Квартира, депозит" : "Описание";
 
   const record = index !== null ? state[kind][index] : null;
