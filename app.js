@@ -244,7 +244,7 @@ function monthKey(iso) {
 }
 
 function renderDashboard() {
-  const now = new Date().toISOString().slice(0, 7);
+  const now = localMonthKey(new Date());
   const totalIncome = state.income.reduce((s, r) => s + r.amount, 0);
   const totalExpense = state.expense.reduce((s, r) => s + r.amount, 0);
   const totalAssets = state.assets.reduce((s, r) => s + r.amount, 0);
@@ -299,6 +299,14 @@ function makeChart(id, config) {
   charts[id] = new Chart(ctx, config);
 }
 
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function localMonthKey(d) {
+  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`;
+}
+
 function lastMonths(n) {
   const result = [];
   const d = new Date();
@@ -306,7 +314,7 @@ function lastMonths(n) {
   for (let i = n - 1; i >= 0; i--) {
     const m = new Date(d.getFullYear(), d.getMonth() - i, 1);
     result.push({
-      key: m.toISOString().slice(0, 7),
+      key: localMonthKey(m),
       label: m.toLocaleString("ru-RU", { month: "short", year: "2-digit" }),
     });
   }
