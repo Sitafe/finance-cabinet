@@ -128,6 +128,13 @@ document.querySelectorAll("[data-open-form]").forEach((btn) => {
 
 document.getElementById("modal-cancel").addEventListener("click", closeForm);
 document.getElementById("modal-x").addEventListener("click", closeForm);
+document.getElementById("date-picker-btn").addEventListener("click", () => {
+  try {
+    formFields.date.showPicker();
+  } catch (e) {
+    formFields.date.focus();
+  }
+});
 modal.addEventListener("click", (e) => {
   if (e.target === modal) closeForm();
 });
